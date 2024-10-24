@@ -44,7 +44,11 @@ fn be_root_server(child_count: usize, cmd: &Option<Vec<String>>) -> Result<()> {
             .spawn()?;
 
         ctrlc::set_handler(move || {
+            /* Slurm needs at least 2 INTR */
             let _ = cmd.kill();
+            let _ = cmd.kill();
+            let _ = cmd.kill();
+            std::process::exit(1);
         })?;
     }
 
