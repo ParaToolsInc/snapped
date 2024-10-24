@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Treemon Viewer</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #histogram-container {
+      width: 100%;
+      height: 50vh; /* Changed to vh for vertical viewport percentage */
+      margin: auto;
+      border: 1px solid black;
+    }
+	 
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h2>Choose a key:</h2>
+    <select id="key-select" class="form-control">
+      <!-- options will be populated dynamically -->
+    </select>
+    <button id="fetch-button" class="btn btn-primary">Fetch Histogram</button>
+    <div id="histogram-container"></div>
+    <div id="histogram-ctx"></div>
+    <h2>Values:</h2>
+    <table id="values-table" class="table table-striped">
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody id="values-tbody"></tbody>
+    </table>
+
+</div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <script>
+    $(document).ready(function() {
+      // Populate the combobox with values from /keys endpoint
+      $.ajax({
+        type: "GET",
+        url: "/keys",
+        success: function(data) {
+          $.each(data, function(index, value) {
+            $("#key-select").append("<option>" + value + "</option>");
+          });
+        }
+      });
+
+      // Handle button click to fetch histogram data
+      $("#fetch-button").click(function() {
+        var key = $("#key-select").val();
+        $.ajax({
+          type: "GET",
+          url: "/hist/" + key,
+          success: function(data) {
+            // Display the histogram data using Plotly
+            var buckets = data.buckets;
+            var mean = data.mean;
+            var ts = data.ts;
+
+            // Extract x and y values from buckets
+            var xValues = [];
+            var yValues = [];
+            $.each(buckets, function(index, bucket) {
+              xValues.push((bucket[0]+bucket[1])/2.0);
+              yValues.push(bucket[2]);
+            });
+
+            // Create a Plotly histogram figure
+            var layout = {
+              title: 'Histogram',
+              xaxis: {title: 'Value'},
+              yaxis: {title: 'Frequency'}
+            };
+            var data = [{
+              x: xValues,
+              y: yValues,
+              type: 'bar'
+            }];
+            Plotly.newPlot('histogram-container', data, layout);
+            // Display additional information below the chart
+            var date = new Date(ts / 1e3); // convert unix timestamp to milliseconds
+            var formattedDate = date.toLocaleString();
+            var infoHtml = "<p>Mean: " + mean + "</p><p>Timestamp: " + formattedDate + "</p>";
+            $("#histogram-ctx").html(infoHtml);
+
+            // Fetch values data from "/values/KEY" endpoint
+            $.ajax({
+              type: "GET",
+              url: "/values/" + key,
+              success: function(valuesData) {
+                var values = Object.keys(valuesData);
+                var html = "";
+                $.each(values, function(index, value) {
+                  html += "<tr><td>" + value + "</td><td>" + valuesData[value] + "</td></tr>";
+                });
+                $("#values-tbody").html(html);
+              }
+            });
+
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
