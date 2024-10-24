@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 anyhow = { version = "1.0.90", features = ["backtrace"] }
 cbindgen = "0.27.0"
 clap = { version = "4.5.20", features = ["derive"] }
+ctrlc = "3.4.5"
 env_logger = "0.11.5"
 gethostname = "0.5.0"
 histogram = { version = "0.11.0", features = ["serde"] }
