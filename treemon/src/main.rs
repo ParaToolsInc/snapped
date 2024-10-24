@@ -19,9 +19,6 @@ struct Arg {
     /// Number of processes to join
     #[clap(short = 'n', long)]
     number: Option<usize>,
-    /// Fanout of the tree
-    #[clap(short = 'f', long, default_value_t = 4)]
-    fanout: u32,
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     command: Option<Vec<String>>,
 }
@@ -78,6 +75,8 @@ fn be_leaf_server() -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    env_logger::init();
+
     let args = Arg::parse();
 
     /* If env is set we are leaf */

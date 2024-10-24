@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use anyhow::Result;
 use histogram::Histogram;
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::net::SocketAddr;
@@ -94,7 +95,7 @@ impl Tbon {
             let mut target: Option<String> = None;
 
             for (_, url, current_count) in tv.child.iter_mut() {
-                if *current_count < 2 {
+                if *current_count < 16 {
                     /* Join this ID */
                     *current_count += 1;
                     target = Some(url.clone());
@@ -195,18 +196,23 @@ impl Tbon {
         child_list: Arc<Mutex<Vec<Child>>>,
     ) -> Result<Vec<TbonResponse>> {
         let resp: Vec<TbonResponse> = if let Ok(child) = child_list.lock().as_mut() {
-            let mut resps: Vec<TbonResponse> = Vec::new();
+            let resps: Vec<Result<TbonResponse>> = child
+                .par_iter_mut()
+                .map(|c| Tbon::do_query(&mut c.sock, &q))
+                .collect();
 
-            for c in child.iter_mut() {
-                match Tbon::do_query(&mut c.sock, &q) {
-                    Ok(resp) => {
-                        resps.push(resp);
+            let mut flat_resp: Vec<TbonResponse> = Vec::new();
+
+            for r in resps {
+                match r {
+                    Ok(tr) => flat_resp.push(tr),
+                    Err(e) => {
+                        return Err(anyhow!("Failed to run query : {}", e));
                     }
-                    Err(e) => return Err(anyhow!("Failed to run query : {}", e)),
                 }
             }
 
-            resps
+            flat_resp
         } else {
             return Err(anyhow!("Failed to lock child list mutex"));
         };
