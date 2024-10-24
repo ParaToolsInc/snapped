@@ -37,11 +37,15 @@ fn be_root_server(child_count: usize, cmd: &Option<Vec<String>>) -> Result<()> {
     if let Some(command) = cmd {
         env::set_var("TREEMON_ROOT", tbon.url());
 
-        let _ = Command::new(&command[0])
+        let mut cmd = Command::new(&command[0])
             .args(&command[1..])
             .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
             .spawn()?;
+
+        ctrlc::set_handler(move || {
+            let _ = cmd.kill();
+        })?;
     }
 
     let bstart = Instant::now();

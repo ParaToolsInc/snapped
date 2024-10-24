@@ -8,13 +8,13 @@ use crate::tbon::Tbon;
 
 #[no_mangle]
 pub unsafe extern "C" fn treemon_root_init() -> *mut Tbon {
-    let mut tbon = Tbon::init_as_root(None).unwrap();
+    let tbon = Tbon::init_as_root(None).unwrap();
     return Arc::into_raw(Arc::new(tbon)) as *mut Tbon;
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn treemon_leaf_init() -> *mut Tbon {
-    let mut tbon = Tbon::init_as_leaf().unwrap();
+    let tbon = Tbon::init_as_leaf().unwrap();
     return Arc::into_raw(Arc::new(tbon)) as *mut Tbon;
 }
 
